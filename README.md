@@ -1,10 +1,9 @@
 # 4-Lane-Traffic-light-Using-TM4C123GH6PM
 
-![WhatsApp Image 2024-04-08 at 10 15 25 AM](https://github.com/user-attachments/assets/2d10aa38-580b-4616-b811-4151a6bc5237)
+![Image_1](https://github.com/user-attachments/assets/1c8067f3-968a-4927-bdc4-a06a204530b4)
 
 
-![WhatsApp Image 2024-04-08 at 10 40 01 AM](https://github.com/user-attachments/assets/7b16e364-a63d-40a8-b135-528f703c9986)
-
+![Image_2](https://github.com/user-attachments/assets/0a9879a8-5e4c-4a33-a11c-76380ca5e806)
 
 
 
