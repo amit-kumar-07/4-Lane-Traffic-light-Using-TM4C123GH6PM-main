@@ -1,0 +1,127 @@
+#include "TM4C123.h"
+
+volatile int interruptFlag = 0;
+
+// Function to create delay
+void delay(int a) {
+    int i = 10000;
+    for (i = 10000; i > 0; i--) {
+        while (a > 0) {
+            a--;
+        }
+    }
+}
+
+// Interrupt Service Routine for GPIO Port F
+//void GPIOF_Handler(void) {
+  //  GPIOF->ICR |= (1 << 4); // Clear interrupt flag for PF4
+  //  interruptFlag = 1; // Set interrupt flag
+//}
+void GPIOF_Handler(void) {
+    GPIOF->ICR |= (1 << 4); // Clear interrupt flag for PF4
+    GPIOF->DATA = 0x02; // Turn on the red LED
+	GPIOB->DATA = 0x02; // Turn on the red LED
+	GPIOE->DATA = 0x02; // Turn on the red LED
+	GPIOD->DATA = 0x02; // Turn on the red LED
+	
+    GPIOB->DATA |= (1 <<5 ); // Turn on PA2
+    delay(5000000); // Delay for approximately 1 second
+    GPIOB->DATA &= ~(1 << 5); // Turn off PA2
+}
+
+// Function to initialize GPIO pins
+void initializeGPIO() {
+    // Enable clock for Port A, Port B,Port d, Port E, and Port F
+    SYSCTL->RCGCGPIO |= (1 << 0) | (1 << 1)| (1 << 3) | (1 << 4) | (1 << 5); 
+    
+    // Configure Port F (Traffic lights)
+    GPIOF->DIR = 0x0E; // Set PF1, PF2, PF3 as outputs
+    GPIOF->DEN = 0x1E; // Enable digital function for PF1, PF2, PF3, PF4
+    GPIOF->PUR |= (1 << 4); // Enable pull-up resistor for PF4 (switch)
+    GPIOF->IS &= ~(1 << 4); // PF4 is edge-sensitive
+    GPIOF->IBE &= ~(1 << 4); // PF4 is not both edges
+    GPIOF->IEV &= ~(1 << 4); // PF4 falling edge trigger
+    GPIOF->ICR |= (1 << 4); // Clear any prior interrupt
+    GPIOF->IM |= (1 << 4); // Unmask interrupt for PF4
+    NVIC_EnableIRQ(GPIOF_IRQn); // Enable GPIO Port F interrupt in NVIC
+
+    // Configure Port B (Lane 1)
+    GPIOB->DIR |= (1 << 1) | (1 << 2) | (1 << 3); // Set PB1, PB2, PB3 as outputs
+    GPIOB->DEN |= (1 << 1) | (1 << 2) | (1 << 3); // Enable digital function for PB1, PB2, PB3
+    
+	// Configure Port D (Lane 1)
+    GPIOD->DIR |= (1 << 1) | (1 << 2) | (1 << 3); // Set PB1, PB2, PB3 as outputs
+    GPIOD->DEN |= (1 << 1) | (1 << 2) | (1 << 3); // Enable digital function for PB1, PB2, PB3
+    
+    // Configure Port E (Lane 2)
+    GPIOE->DIR |= (1 << 1) | (1 << 2) | (1 << 3); // Set PE1, PE2, PE3 as outputs
+    GPIOE->DEN |= (1 << 1) | (1 << 2) | (1 << 3); // Enable digital function for PE1, PE2, PE3
+}
+
+// Function to control the traffic light cycle
+void trafficLightCycle(int cycle) {
+    // Deactivate all lanes initially
+    GPIOF->DATA = 0;
+    GPIOB->DATA = 0;
+    GPIOE->DATA = 0;
+	  GPIOD->DATA = 0;
+    
+    // Activate specific LEDs based on the cycle
+    switch (cycle) {
+        case 1: // First cycle
+            GPIOF->DATA = 0x08; // Activate only PF1
+            GPIOB->DATA = 0x02; // Activate only PB2
+            GPIOE->DATA = 0x02; // Activate only PE2
+			    	GPIOD->DATA = 0x02; // Activate only PD2
+				
+            break;
+        case 2: // Second cycle
+            GPIOF->DATA = 0x08; // Activate only PF2
+            GPIOB->DATA = 0x04; // Activate only PB3
+            GPIOE->DATA = 0x02; // Activate only PE1
+				    GPIOD->DATA = 0x02; // Activate only PE1
+				    break;
+        case 3: // Third cycle
+            GPIOF->DATA = 0x02; // Activate only PF3
+            GPIOB->DATA = 0x08; // Activate only PB1
+            GPIOE->DATA = 0x02; // Activate only PE2
+				    GPIOD->DATA = 0x02; // Activate only PE1
+            break;
+        case 4: // Fourth cycle
+            GPIOF->DATA = 0x02; // Activate only PF1
+            GPIOB->DATA = 0x08; // Activate only PB2
+            GPIOE->DATA = 0x04; // Activate only PE3
+						GPIOD->DATA = 0x02; // Activate only PE1
+
+            break;
+        case 5: // Fifth cycle
+            GPIOF->DATA = 0x02; // Activate only PF2
+            GPIOB->DATA = 0x02; // Activate only PB3
+            GPIOE->DATA = 0x08; // Activate only PE1
+					  GPIOD->DATA = 0x02; // Activate only PE1
+
+            break;
+        case 6: // Sixth cycle
+            GPIOF->DATA = 0x02; // Activate only PF3
+            GPIOB->DATA = 0x02; // Activate only PB1
+            GPIOE->DATA = 0x08; // Activate only PE2
+					  GPIOD->DATA = 0x04; // Activate only PE1
+				    break;
+				case 7: // Sixth cycle
+            GPIOF->DATA = 0x02; // Activate only PF3
+            GPIOB->DATA = 0x02; // Activate only PB1
+            GPIOE->DATA = 0x02; // Activate only PE2
+					  GPIOD->DATA = 0x08; // Activate only PE1
+			      	break;
+				case 8: // Sixth cycle
+            GPIOF->DATA = 0x04; // Activate only PF3
+            GPIOB->DATA = 0x02; // Activate only PB1
+            GPIOE->DATA = 0x02; // Activate only PE2
+					  GPIOD->DATA = 0x08; // Activate only PE1
+				
+
+            break;
+        default:
+            break;
+    }
+}

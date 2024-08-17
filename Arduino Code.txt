@@ -1,0 +1,98 @@
+#include <SevSeg.h>
+
+SevSeg sevseg[4]; // Array to hold four instances of SevSeg
+
+int counters[4] = {30, 30, 30, 30}; // Start counters for each display from 60
+unsigned long previousTime[4] = {0, 0, 0, 0}; // Array to hold previous time for each display
+int currentDisplay = 0; // Variable to keep track of the current display being updated
+bool check = false;
+bool resetPressed = false; // Flag to indicate if the reset button is pressed
+unsigned long resetStartTime = 0; // Variable to store the time when reset button is pressed
+
+// Define pins for each display
+byte digitPins[4][2] = {{9, 10}, {11, 12}, {13, 14}, {15, 16}};
+byte segmentPins[4][8] = {
+  {1, 2, 3, 4, 5, 6, 7, 8},
+  {25, 26, 27, 28, 29, 30, 31, 32},
+  {33, 34, 35, 36, 37, 38, 39, 40},
+  {41, 42, 43, 44, 45, 46, 47, 48}
+};
+
+// Pin for the reset button
+const int resetButtonPin = 20; // Assuming the reset button is connected to pin 20
+const int irSensorPin = 19; // IR sensor connected to pin 19
+
+void setup() {
+  byte numDigits = 2;
+
+  // Initialize each display
+  for (int i = 0; i < 4; i++) {
+    sevseg[i].begin(COMMON_ANODE, numDigits, digitPins[i], segmentPins[i]);
+    sevseg[i].setBrightness(90);
+  }
+
+  // Setup pin for the reset button
+  pinMode(resetButtonPin, INPUT_PULLUP);
+  pinMode(irSensorPin, INPUT); // IR sensor pin as input
+}
+
+void loop() {
+  unsigned long currentTime = millis();
+
+  // Check if the reset button is pressed
+  if (digitalRead(resetButtonPin) == LOW && !resetPressed) {
+    resetPressed = true;
+    resetStartTime = currentTime;
+  }
+
+  // Check if it's time to update the display
+  if (currentTime - previousTime[currentDisplay] >= 1000) {
+    previousTime[currentDisplay] = currentTime;
+
+    if (resetPressed) {
+      // If reset button is pressed, reset all counters to 0
+      for (int i = 0; i < 4; i++) {
+        counters[i] = 0;
+        sevseg[i].setNumber(0);
+      }
+
+      // Check if 15 seconds have passed since reset button was pressed
+      if (currentTime - resetStartTime >= 15000) {
+        resetPressed = false; // Reset the flag
+      }
+    } else {
+      // Normal counting
+      if (counters[currentDisplay] > 0) {
+        sevseg[currentDisplay].setNumber(counters[currentDisplay]);
+        counters[currentDisplay]--;
+      } else {
+        // Reset counter and display "00" when it reaches 0
+        counters[currentDisplay] = 30;
+        sevseg[currentDisplay].setNumber(0);
+        check = true;
+      }
+    }
+  }
+
+  // Check if IR sensor is triggered
+  if (digitalRead(irSensorPin) == LOW) {
+    counters[currentDisplay] += 30; // Increase the counter by 30 seconds
+    if (counters[currentDisplay] > 99) // Limit the counter to 99
+      counters[currentDisplay] = 99;
+  }
+
+  // Display "00" on other displays
+  for (int i = 0; i < 4; i++) {
+    if (i != currentDisplay) {
+      sevseg[i].setNumber(0);
+    }
+    sevseg[i].refreshDisplay();
+  }
+
+  // Update current display index
+  if (check) {
+    currentDisplay++;
+    if (currentDisplay == 4) currentDisplay = 0;
+    check = false;
+  }
+}
